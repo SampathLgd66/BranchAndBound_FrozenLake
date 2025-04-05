@@ -1,7 +1,7 @@
 import time
 from queue import PriorityQueue
+from frozen_lake_env import create_env
 
-# Heuristic function: Manhattan distance
 def heuristic(pos, goal, ncols):
     x1, y1 = divmod(pos, ncols)
     x2, y2 = divmod(goal, ncols)
@@ -14,29 +14,30 @@ def branch_and_bound(env):
 
     frontier = PriorityQueue()
     visited = set()
-    
-    # (priority, state, path)
-    frontier.put((0, env.reset(), []))
+
+    obs, _ = env.reset()
+    frontier.put((0, obs, []))
 
     while not frontier.empty():
         _, state, path = frontier.get()
+        if state in visited:
+            continue
         visited.add(state)
 
         if state == goal_state:
-            return path, time.time() - start_time, 1  # path, time, reward
+            return path, time.time() - start_time, 1
 
         for action in range(env.action_space.n):
-            next_state, reward, done, truncated, info = env.step(action)
-            if next_state in visited:
+            env.unwrapped.s = state  # Set current state manually
+            next_obs, reward, done, truncated, _ = env.step(action)
+
+            if next_obs in visited:
                 continue
 
-            # Add to frontier with priority = cost + heuristic
             cost = len(path) + 1
-            h = heuristic(next_state, goal_state, ncols)
+            h = heuristic(next_obs, goal_state, ncols)
             total_cost = cost + h
-            frontier.put((total_cost, next_state, path + [action]))
 
-            # Reset environment to original state
-            env.unwrapped.s = state
+            frontier.put((total_cost, next_obs, path + [action]))
 
-    return [], time.time() - start_time, 0  # failed
+    return [], time.time() - start_time, 0

@@ -1,21 +1,31 @@
+import gym
 import imageio
-import numpy as np
-import matplotlib.pyplot as plt
+import os
 from frozen_lake_env import create_env
 from branch_and_bound import branch_and_bound
 
-def create_gif(output_path="results/gifs/run.gif"):
+def generate_gif():
     env = create_env()
-    path, _, reward = branch_and_bound(env)
+    path, _, _ = branch_and_bound(env)
+
     frames = []
+    obs, _ = env.reset()
 
-    state = env.reset()
     for action in path:
-        frame = env.render(mode='rgb_array')
+        frame = env.render()
         frames.append(frame)
-        state, _, _, _, _ = env.step(action)
+        obs, _, done, _, _ = env.step(action)
+        if done:
+            frame = env.render()
+            frames.append(frame)
+            break
 
-    imageio.mimsave(output_path, frames, duration=0.5)
+    env.close()
+
+    os.makedirs("results/gifs", exist_ok=True)
+    gif_path = "results/gifs/bnb_frozenlake.gif"
+    imageio.mimsave(gif_path, frames, duration=0.5)
+    print(f"🎞️ GIF saved to: {gif_path}")
 
 if __name__ == "__main__":
-    create_gif()
+    generate_gif()
